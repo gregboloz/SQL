@@ -1,0 +1,125 @@
+Tworzenie tabel:
+
+CREATE TABLE OSOBY (
+    IDO int PRIMARY KEY,
+    NAZWISKO char(30),
+    IMIE 	 char(15),
+    PESEL    char(11)
+);
+
+Powiązanie tabeli
+
+ALTER TABLE OSOBY ADD
+	CONSTRAINT [FK_OSOBY_MIASTA] FOREIGN KEY  (foreign key to ID miasta bo key z tabeli Miasta)
+	(IDMiasta) REFERENCES(IDMiasta)    
+GO
+
+Wprowadzanie danych:
+
+INSERT INTO nazwa_tabeli (column1, column2, column3)
+VALUES (value1, value2, value3)
+
+tabela słownikowa - tabela z ID z różnych tabel np FILKRA (film i kraj)
+
+reguły: 
+
+CREATE RULE age_rule AS
+ON INSERT TO people
+WHERE (age > 100)
+DO INSTEAD NOTHING;
+
+lub
+
+PRINT '*** TWORZENIE REGULY (RULE) PLEC_KM***'
+	GO
+	CREATE RULE PLEC_KM AS @X IN ('M','K')
+	GO
+
+i dopisywanie tej reguły do tabeli
+
+PRINT '*** DOWIAZYWANIE REGULY PLEC_K_M DO KOLUMNY PLEC W TABELI KLIENCI ****'
+	EXEC sp_bindrule PLEC_KM,'KLIENCI.PLEC'
+	GO
+
+lub 
+
+ALTER TABLE table_name
+ADD CONSTRAINT constraint_name CHECK (age <= 100);  lub
+
+ALTER TABLE people
+ADD CONSTRAINT age_check CHECK (age <= 100);
+
+Tworzenie widoków:
+CREATE VIEW nazwa_widoku(V_Klienci)
+AS
+SELECT IDklienta, Imie, NAZWISKO
+FROM Klienci
+WHERE PLEC = 'M'
+GO
+
+lub
+
+SELECT * 
+FROM V_Klienci
+
+lub
+
+SELECT Nazwisko, IMIE
+FROM V_Klienci
+
+----------
+
+IF EXISTS (select * from dbo.sysobjects where id = OBJECT_ID(N'FILRODZ'))
+BEGIN
+PRINT ' Tabela FILRODZ istnieje w BD Kasety!'
+END
+ELSE
+BEGIN
+PRINT ' Tworze tabele FILRODZ w BD KASETY'
+	CREATE TABLE FILRODZ
+	(
+	IDFILMU	INT	NOT NULL,
+	IDRODZAJ	INT	NOT NULL,
+	UNIQUE (IDFILMU,IDRODZAJ)
+	)
+	END
+	GO
+
+----- Tworzenie triggerów, najpierw tabela do wyników potem trigger
+
+CREATE TABLE KOMUNIKATYWYZWALACZY
+(
+IDW		INT		IDENTITY(1,1),
+TABELA	CHAR(30),
+KOLUMNA	CHAR(15),
+OPERACJA	CHAR(10),
+STARA_WART	CHAR(50),
+NOWA_WART	CHAR(50),
+CZAS	SMALLDATETIME	DEFAULT(GETDATE()),
+UZYTKOWNIK	CHAR(20)	DEFAULT(USER)
+)
+GO
+
+2.	Przykładowe tiggery z zajęć
+a.	Trigger 1
+
+IF EXISTS (select * from dbo.sysobjects where id = OBJECT_ID(N'POAKTUALIZACJI_RODZAJ'))
+BEGIN
+PRINT ' Trigger POAKTUALIZACJI_RODZAJ istnieje w BD Kasety!'
+END
+GO
+BEGIN
+PRINT ' Tworze triggera POAKTUALIZACJI_RODZAJ w BD KASETY'
+END
+GO
+CREATE TRIGGER POAKTUALIZACJI_RODZAJ
+ON RODZAJ
+AFTER UPDATE
+AS
+INSERT INTO KOMUNIKATYWYZWALACZY (TABELA,KOLUMNA,OPERACJA,STARA_WART,NOWA_WART)
+VALUES('RODZAJ','DOWOLNA','UPDATE','STARY RODZAJ','NOWY RODZAJ')
+GO
+
+pyrzkłąd: UPDATE RODZAJ SET RODZAJFIL = 'PASTISZ' WHERE IDRODZAJ = 3
+
+SELECT * FROM KOMUNIKATYWYZWALACZY
